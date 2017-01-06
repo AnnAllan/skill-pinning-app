@@ -1,0 +1,26 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: 5
+  host: localhost
+  # Change the usename and password to the postgres username and password that
+  # you set during the installation of postgres.
+  # If you're on a Mac and installed postgres via homebrew, you can simply
+  # delete the following two lines.
+  username: postgres
+  password: root
+
+development:
+  <<: *default
+  database: coder-pinterest_development
+
+test:
+  <<: *default
+  database: coder-pinterest_test
+
+production:
+  url: <%= ENV['DATABASE_URL'] %>
+    #heroku config:set S3_BUCKET_NAME=skillcrush-rails
+    #heroku config:set AWS_ACCESS_KEY_ID=AKIAI4Y7CIUPPOFAYN2Q
+    #heroku config:set AWS_SECRET_ACCESS_KEY=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
+

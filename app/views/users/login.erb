@@ -1,0 +1,15 @@
+<%= form_tag "/login" %>
+	<h2>Please enter your email address and password to login in!</h2>
+	
+	<% if !@errors.nil? %>
+		<%= @errors %>
+	<% end %>
+	
+	<p>Email address</p>
+	<input id="email" name="email" type="email" />
+	 
+	<p>Password</p>
+	<input id="password" name="password" type="password" />
+	 
+	<input name="commit" type="submit" value="Login" />
+

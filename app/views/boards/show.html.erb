@@ -1,0 +1,13 @@
+<p id="notice"><%= notice %></p>
+
+<h1>
+	<%= @board.name %>
+</h1>
+
+
+
+<%= render partial: "shared/pins_list" %>
+
+
+<%= link_to 'Edit', edit_board_path(@board) %> |
+<%= link_to 'Back', boards_path %>

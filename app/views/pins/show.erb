@@ -1,0 +1,33 @@
+<div class="header">
+  <h1>
+	<i class="fa fa-laptop"></i>
+    <%= "#{@pin.title}" %>
+  </h1>
+</div>
+
+<div class="show-pin">
+  <img src="<%=(@pin.image.url(:medium)) %>">
+  <p><%= "#{@pin.text}" %></p>
+
+  <hr/>
+  <p>
+    <b>Visit <%= "#{@pin.title}" %> at: </b>
+	 <%= link_to "#{@pin.url}" %>
+  </p>
+  <%= link_to repin_path(@pin), class: "btn btn-default", method: "post" do %>
+	<i class="fa fa-thumb-tack" aria-hidden="true"></i>
+	Repin!
+	<% end %>
+</div>
+<hr/>
+<%= render partial: "shared/repin_form", locals: {pin: @pin} %>
+	<%= "This pin has been pinned by ..." %>
+
+	<% @users.each do |user| %>
+		<h5><%= user.first_name %> <%= user.last_name %></h5>
+	<% end %>
+<br/>
+<a href="/">
+	<i class="fa fa-arrow-left"></i>
+  Back to Home
+</a>

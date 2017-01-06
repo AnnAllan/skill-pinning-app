@@ -1,0 +1,45 @@
+<%= form_for(@pin, multipart: true) do |f| %>
+	<%= f.hidden_field :user_id, value: current_user.id %>
+	<div class="form-group">
+		<label for="pin_title">Title</label>
+		<%= f.text_field :title, :size => 150, :rows=> 2 %>
+	</div>
+	
+	<div class="form-group">
+		<label for="pin_text">Text</label>
+		<%= f.text_area :text, size: "150x10" %>
+	</div>
+			
+	<div class="form-group">
+		<label for="pin_url">URL</label>
+		<%= f.text_field :url, :size => 150, :rows=> 2 %>
+	</div>
+	
+	<div class="form-group">
+		<label for="pin_slug">Slug</label>
+		<%= f.text_field :slug, :size => 150, :rows=> 2 %>
+	</div>
+	
+	<div class="form-group">
+		<label for="pin_category_id">Category</label>
+		<%= f.collection_select(:category_id, Category.all, :id, :name) %>
+	</div>
+	
+	<div class="form-group">
+		<label for="pin_image">Image</label>
+		<%= f.file_field :image %>
+	</div>
+	
+	<div class="form-group">
+	<%= f.fields_for :pinnings do |p| %>
+		<div class="form-group">
+			<label>Which board?</label>
+			<%= p.collection_select(:board_id, current_user.boards, :id, :name, {}, {class: "form-control"}) %>
+			<%= p.hidden_field :user_id, value: current_user.id %>
+		</div>
+	<% end %>
+		
+
+	
+	<%= f.submit %>
+<% end %>
