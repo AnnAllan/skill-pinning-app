@@ -2,9 +2,10 @@ require 'spec_helper'
 RSpec.describe PinsController do
 
 	before(:each) do	
-		@user = FactoryGirl.create(:user)
+		@user = FactoryGirl.create(:user_with_boards)
 		login(@user)
 		@board = @user.boards.first
+		@board_pinner = BoardPinner.create(user: @user, board: FactoryGirl.create(:board))
 		@pin = FactoryGirl.create(:pin)
 	end
 	
@@ -36,26 +37,31 @@ RSpec.describe PinsController do
 			expect(response).to redirect_to(:login)
 		end
 	end
-	describe "GET new" do
-    it 'responds with successfully' do
-      get :new
-      expect(response.success?).to be(true)
-    end
-    
-    it 'renders the new view' do
-      get :new      
-      expect(response).to render_template(:new)
-    end
-    
-    it 'assigns an instance variable to a new pin' do
-      get :new
-      expect(assigns(:pin)).to be_a_new(Pin)
-    end
+  describe "GET new" do
+	it 'responds with successfully' do
+	  get :new
+	  expect(response.success?).to be(true)
+	end
+	
+	it 'renders the new view' do
+	  get :new      
+	  expect(response).to render_template(:new)
+	end
+	
+	it 'assigns an instance variable to a new pin' do
+	  get :new
+	  expect(assigns(:pin)).to be_a_new(Pin)
+	end
 	
 	it 'redirects to Login when logged out' do
 		logout(@user)
 		get :new
 		expect(response).to redirect_to(:login)
+	end
+	
+	it 'assigns @pinnable_boards to all pinnable boards' do
+		get :new
+		expect(assigns(:pinnable_boards)).to eq(@pinnable_boards)
 	end
   end
   
@@ -114,6 +120,19 @@ RSpec.describe PinsController do
 		post :create, pin: @pin_hash
 		expect(response).to redirect_to(:login)
 	end
+	
+	it 'pins to a board for which the user is a board_pinner' do
+		@pin_hash[:pinnings_attributes] = []
+		board = @board_pinner.board
+		@pin_hash[:pinnings_attributes] << {board_id: board.id, user_id: @user.id}
+		post :create, pin: @pin_hash
+		pinning = BoardPinner.where("user_id=? AND board_id=?", @user.id, board.id)
+		expect(pinning.present?).to be(true)
+		if pinning.present?
+			pinning.destroy_all
+		end
+	end
+
   end
   describe "GET edit" do
 	#before(:each) do
@@ -182,8 +201,7 @@ RSpec.describe PinsController do
   
   describe "POST repin" do
 	before(:each) do	
-		@user = FactoryGirl.create(:user)
-		@board = @user.boards.first
+		@user = FactoryGirl.create(:user_with_boards)
 		login(@user)
 		@pin = FactoryGirl.create(:pin)
 	end
@@ -210,7 +228,24 @@ RSpec.describe PinsController do
 		post :repin, id: @pin.id, pin: {pinning: {user_id: @user.id}}
 		expect(response).to redirect_to(user_path(@user))
 	end
-end
 	
-
+	it 'creates a pinning to a board on which the user is a board_pinner' do
+		@pin_hash = {
+			title: @pin.title,
+			url: @pin.url,
+			slug: @pin.slug,
+			text: @pin.text,
+			category_id: @pin.category_id,
+		}
+		board = @board_pinner.board
+		@pin_hash[:pinning] = {board_id: board.id}
+		post :repin, id: @pin.id, pin: @pin_hash
+		pinning = Pinning.where("board_id=?", @board.id)
+		expect(pinning.present?).to be(true)
+		if pinnng.present?
+			pinning.destroy_all
+		end
+	end
 end
+end
+

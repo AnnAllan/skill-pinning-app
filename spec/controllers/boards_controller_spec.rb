@@ -20,7 +20,7 @@ require 'spec_helper'
 
 RSpec.describe BoardsController do
 	before(:each) do	
-		@user = FactoryGirl.create(:user)
+		@user = FactoryGirl.create(:user_with_boards_and_followers)
 		@board = @user.boards.first
 		login(@user)
 		@pin = FactoryGirl.create(:pin)
@@ -49,14 +49,13 @@ RSpec.describe BoardsController do
   # BoardsController. Be sure to keep this updated too.
   #let(:valid_session) { {} }
 
-  #describe "GET #index" do
-   # it "assigns all boards as @boards" do
-    #  board = Board.create! valid_attributes
-    #  get :index, params: {}, session: valid_session
-    #  expect(assigns(:boards)).to eq([board])
-    #end
-  #end
-
+  describe "GET #index" do
+	it 'assigns @pinnable_boards to all pinnable boards' do
+		get :index
+		expect(assigns(:boards)).to eq(@user.pinnable_boards)
+	end
+  end
+  
   describe "GET #show" do
     it "assigns the requested board" do
 		get :show, {:id => @board.to_param}
@@ -70,10 +69,6 @@ RSpec.describe BoardsController do
   end
 
   describe "GET #new" do
-   # it "assigns a new board as @board" do
-    #  get :new, params: {}, session: valid_session
-    #  expect(assigns(:board)).to be_a_new(Board)
-    #end
 	it 'responds with successfully' do
 		get :new
 		expect(response.success?).to be(true)
@@ -96,13 +91,33 @@ RSpec.describe BoardsController do
 	end
   end
 
-  #describe "GET #edit" do
-   # it "assigns the requested board as @board" do
-   #   board = Board.create! valid_attributes
-   #   get :edit, params: {id: board.to_param}, session: valid_session
-   #   expect(assigns(:board)).to eq(board)
-   # end
-  #end
+  describe "GET #edit" do
+	it 'responds successfully' do
+		get :edit, id: @board.id
+		expect(response.success?).to be(true)
+	end
+	
+	it 'renders the edit view' do
+		get :edit, id: @board.id
+		expect(response).to render_template(:edit)
+	end
+	
+	it 'assigns an instance variable to a new board' do
+		get :edit, id: @board.id
+		expect(assigns(:board)).to eq(@board)
+	end
+	
+	it 'redirects to the login page if user is not logged in' do
+		logout(@user)
+		get :edit, id: @board.id
+		expect(response).to redirect_to(:login)
+	end
+	
+	it 'sets @followers to the user\'s followers' do
+		get :edit, id: @board.id
+		expect(assigns(:followers)).to eq(@user.user_followers)
+	end
+  end	
 
   describe "POST #create" do
 	before(:each) do
@@ -145,92 +160,66 @@ RSpec.describe BoardsController do
 	end
   end
   
-    #context "with valid params" do
-    #  it "creates a new Board" do
-     #   expect {
-     #     post :create, params: {board: valid_attributes}, session: valid_session
-     #   }.to change(Board, :count).by(1)
-    #  end
 
-    #  it "assigns a newly created board as @board" do
-    #    post :create, params: {board: valid_attributes}, session: valid_session
-    #    expect(assigns(:board)).to be_a(Board)
-     #   expect(assigns(:board)).to be_persisted
-     # end
+  describe "PUT #update" do
+	before(:each) do
+		@board_hash = {
+			name: @board.name
+		}
+	end
+	
+	it 'responds with a redirect' do
+		put :update, id: @board.id, board: @board_hash
+		expect(response).to redirect_to("/boards/#{@board.id}")
+	end
+	
+	it 'updates a board' do
+		@board_hash[:name] = "New Name"
+		put :update, id: @board.id, board: @board_hash
+		expect(@board.reload.name).to eq("New Name")
+	end
+	
+	it 'redirects to the show view' do
+		put :update, id: @board.id, board: @board_hash
+		expect(response).to redirect_to(board_url(assigns(:board)))
+	end
+	
+	it 'redisplays edit form on error' do
+		@board_hash[:name] = ""
+		put :update, id: @board.id, board: @board_hash
+		expect(response).to render_template(:edit)
+	end
+	
+	it 'assigns the @errors instance variable on error' do
+		@board_hash[:name] = ""
+		put :update, id: @board.id, board: @board_hash
+		expect(assigns[:board].errors.any?).to be(true)
+	end
+	
+	it 'redirects to the login page if user is not logged in' do
+		logout(@user)
+		put :update, id: @board.id, board: @board_hash
+		expect(response).to redirect_to(:login)
+	end
+	
+	it 'creates a BoardPinning' do
+		user_to_let_pin = @user.followers.first
+		@board_hash[:board_pinners_attributes] = []
+		@board_hash[:board_pinners_attributes] << {user_id: user_to_let_pin.id}
+		put :update, id: @board.id, board: @board_hash
+		board_pinner = BoardPinner.where("user_id=? AND board_id=?", user_to_let_pin.id, @board.id)
+		expect(board_pinner.present?).to be (true)
+		if board_pinner.present?
+			board_pinner.destroy_all
+		end
+	end
+  end
+ end
+	
+	
 
-     # it "redirects to the created board" do
-     #   post :create, params: {board: valid_attributes}, session: valid_session
-     #   expect(response).to redirect_to(Board.last)
-     # end
-    #end
 
-    #context "with invalid params" do
-    #  it "assigns a newly created but unsaved board as @board" do
-    #    post :create, params: {board: invalid_attributes}, session: valid_session
-    #    expect(assigns(:board)).to be_a_new(Board)
-    #  end
 
-    #  it "re-renders the 'new' template" do
-    #    post :create, params: {board: invalid_attributes}, session: valid_session
-     #   expect(response).to render_template("new")
-     # end
-    #end
- 
 
-  #describe "PUT #update" do
-  #  context "with valid params" do
-   #   let(:new_attributes) {
-   #     skip("Add a hash of attributes valid for your model")
-   #   }
 
-   #   it "updates the requested board" do
-   #    board = Board.create! valid_attributes
-  #      put :update, params: {id: board.to_param, board: new_attributes}, session: valid_session
-     #   board.reload
-     #   skip("Add assertions for updated state")
-    #  end
 
-    #  it "assigns the requested board as @board" do
-    #    board = Board.create! valid_attributes
-     #   put :update, params: {id: board.to_param, board: valid_attributes}, session: valid_session
-    #    expect(assigns(:board)).to eq(board)
-    #  end
-
-    #  it "redirects to the board" do
-    #    board = Board.create! valid_attributes
-    #    put :update, params: {id: board.to_param, board: valid_attributes}, session: valid_session
-     #   expect(response).to redirect_to(board)
-   #   end
-   # end
-
-   # context "with invalid params" do
-   #   it "assigns the board as @board" do
-   #     board = Board.create! valid_attributes
-   #     put :update, params: {id: board.to_param, board: invalid_attributes}, session: valid_session
-   #     expect(assigns(:board)).to eq(board)
-   #   end
-
-   #   it "re-renders the 'edit' template" do
-   #     board = Board.create! valid_attributes
-   #     put :update, params: {id: board.to_param, board: invalid_attributes}, session: valid_session
-    #    expect(response).to render_template("edit")
-    #  end
-    #end
-  #end
-
-  #describe "DELETE #destroy" do
-   # it "destroys the requested board" do
-   #   board = Board.create! valid_attributes
-    #  expect {
-   #     delete :destroy, params: {id: board.to_param}, session: valid_session
-    #  }.to change(Board, :count).by(-1)
-   # end
-
-   # it "redirects to the boards list" do
-   #   board = Board.create! valid_attributes
-  #    delete :destroy, params: {id: board.to_param}, session: valid_session
-   #   expect(response).to redirect_to(boards_url)
-  #  end
-  #end
-
-end
